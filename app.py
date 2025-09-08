@@ -5,6 +5,7 @@ from bson.objectid import ObjectId
 from pymongo import ReturnDocument
 from dotenv import load_dotenv
 from functools import wraps
+from pymongo import ReturnDocument
 
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -46,14 +47,18 @@ def create_note():
 
     return jsonify({"id": str(note_id), "title": data["title"], "content": data["content"]}), 201
 
+from pymongo import ReturnDocument   # <--- IMPORTANTE
+
 @app.route("/notes/<id>", methods=["PUT"])
-@requires_auth
 def update_note(id):
     data = request.json
     updated = mongo.db.notes.find_one_and_update(
         {"_id": ObjectId(id)},
-        {"$set": {"title": data.get("title"), "content": data.get("content")}},
-        return_document=ReturnDocument.AFTER
+        {"$set": {
+            "title": data.get("title"),
+            "content": data.get("content")
+        }},
+        return_document=ReturnDocument.AFTER   # agora funciona
     )
     if not updated:
         return jsonify({"error": "Note not found"}), 404
@@ -61,10 +66,10 @@ def update_note(id):
         "id": str(updated["_id"]),
         "title": updated["title"],
         "content": updated["content"]
-    })
+    }), 200   # <--- bom colocar o status code de sucesso
+
 
 @app.route("/notes/<id>", methods=["DELETE"])
-@requires_auth
 def delete_note(id):
     result = mongo.db.notes.delete_one({"_id": ObjectId(id)})
     if result.deleted_count == 0:
