@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo
 from bson.objectid import ObjectId
@@ -5,8 +6,8 @@ from functools import wraps
 
 app = Flask(__name__)
 
-# Configuração MongoDB (ajuste a URI para o seu cluster Atlas)
-app.config["MONGO_URI"] = "mongodb://localhost:27017/notesdb"
+# Configuração MongoDB (ajuste a URI para o seu cluster Atlas ou use mongomock nos testes)
+app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/notesdb")
 mongo = PyMongo(app)
 
 # Middleware simples para simular Auth0
@@ -16,7 +17,6 @@ def requires_auth(f):
         token = request.headers.get("Authorization", None)
         if not token:
             return jsonify({"error": "Token missing"}), 401
-        # Aqui poderia validar com Auth0 de verdade
         return f(*args, **kwargs)
     return decorated
 
@@ -24,13 +24,7 @@ def requires_auth(f):
 @requires_auth
 def get_notes():
     notes = mongo.db.notes.find()
-    output = []
-    for note in notes:
-        output.append({
-            "id": str(note["_id"]),
-            "title": note["title"],
-            "content": note["content"]
-        })
+    output = [{"id": str(note["_id"]), "title": note["title"], "content": note["content"]} for note in notes]
     return jsonify(output)
 
 @app.route("/notes", methods=["POST"])
@@ -45,11 +39,7 @@ def create_note():
         "content": data["content"]
     }).inserted_id
 
-    return jsonify({
-        "id": str(note_id),
-        "title": data["title"],
-        "content": data["content"]
-    }), 201
+    return jsonify({"id": str(note_id), "title": data["title"], "content": data["content"]}), 201
 
 @app.route("/notes/<id>", methods=["PUT"])
 @requires_auth
@@ -62,11 +52,7 @@ def update_note(id):
     )
     if not updated:
         return jsonify({"error": "Note not found"}), 404
-    return jsonify({
-        "id": str(updated["_id"]),
-        "title": updated["title"],
-        "content": updated["content"]
-    })
+    return jsonify({"id": str(updated["_id"]), "title": updated["title"], "content": updated["content"]})
 
 @app.route("/notes/<id>", methods=["DELETE"])
 @requires_auth

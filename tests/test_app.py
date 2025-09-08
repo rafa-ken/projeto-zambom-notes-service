@@ -1,17 +1,18 @@
 import pytest
+import mongomock
 from app import app, mongo
-from bson.objectid import ObjectId
 
 @pytest.fixture
 def client():
     app.config["TESTING"] = True
-    app.config["MONGO_URI"] = "mongodb://localhost:27017/notes_testdb"
-    with app.app_context():
-        mongo.db.notes.delete_many({})  # limpa antes dos testes
+
+    # Mocka o MongoDB com mongomock
+    mongo.cx = mongomock.MongoClient()
+    mongo.db = mongo.cx["notes_testdb"]
+
     client = app.test_client()
     yield client
-    with app.app_context():
-        mongo.db.notes.delete_many({})  # limpa depois dos testes
+    mongo.db.notes.delete_many({})  # limpa após cada teste
 
 def test_create_note(client):
     res = client.post(
