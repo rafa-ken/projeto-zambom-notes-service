@@ -2,11 +2,16 @@ import os
 from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo
 from bson.objectid import ObjectId
+from pymongo import ReturnDocument
+from dotenv import load_dotenv
 from functools import wraps
+
+# Carregar variáveis de ambiente
+load_dotenv()
 
 app = Flask(__name__)
 
-# Configuração MongoDB (ajuste a URI para o seu cluster Atlas ou use mongomock nos testes)
+# Configuração MongoDB (ajuste a URI para o seu cluster Atlas)
 app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/notesdb")
 mongo = PyMongo(app)
 
@@ -48,11 +53,15 @@ def update_note(id):
     updated = mongo.db.notes.find_one_and_update(
         {"_id": ObjectId(id)},
         {"$set": {"title": data.get("title"), "content": data.get("content")}},
-        return_document=True
+        return_document=ReturnDocument.AFTER
     )
     if not updated:
         return jsonify({"error": "Note not found"}), 404
-    return jsonify({"id": str(updated["_id"]), "title": updated["title"], "content": updated["content"]})
+    return jsonify({
+        "id": str(updated["_id"]),
+        "title": updated["title"],
+        "content": updated["content"]
+    })
 
 @app.route("/notes/<id>", methods=["DELETE"])
 @requires_auth
@@ -63,4 +72,4 @@ def delete_note(id):
     return jsonify({"message": "Note deleted"}), 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5002, debug=True)
