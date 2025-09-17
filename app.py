@@ -12,8 +12,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Configuração MongoDB (ajuste a URI para o seu cluster Atlas)
-app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/notesdb")
+app.config["MONGO_URI"] = os.getenv("MONGO_URI")
 mongo = PyMongo(app)
 
 @app.route("/notes", methods=["GET"])
