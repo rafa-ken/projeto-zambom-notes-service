@@ -24,7 +24,7 @@ python app.py
 ## Como rodar com Docker
 ```bash
 docker build -t your-dockerhub-username/notes-service .
-docker run -p 5002:5000 your-dockerhub-username/notes-service
+docker run -p 8082:5002 your-dockerhub-username/notes-service
 ```
 
 ## Testes
