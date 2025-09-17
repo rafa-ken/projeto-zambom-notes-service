@@ -50,5 +50,5 @@ jobs:
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/notes-service:latest
           docker stop notes-service || true
           docker rm notes-service || true
-          docker run -d -p 8002:5002 --name notes-service ${{ secrets.DOCKERHUB_USERNAME }}/notes-service:latest
+          docker run -d -p 8082:5002 --name notes-service ${{ secrets.DOCKERHUB_USERNAME }}/notes-service:latest
           EOF
