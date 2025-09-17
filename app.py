@@ -16,25 +16,13 @@ app = Flask(__name__)
 app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/notesdb")
 mongo = PyMongo(app)
 
-# Middleware simples para simular Auth0
-def requires_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.headers.get("Authorization", None)
-        if not token:
-            return jsonify({"error": "Token missing"}), 401
-        return f(*args, **kwargs)
-    return decorated
-
 @app.route("/notes", methods=["GET"])
-@requires_auth
 def get_notes():
     notes = mongo.db.notes.find()
     output = [{"id": str(note["_id"]), "title": note["title"], "content": note["content"]} for note in notes]
     return jsonify(output)
 
 @app.route("/notes", methods=["POST"])
-@requires_auth
 def create_note():
     data = request.json
     if not data or "title" not in data or "content" not in data:
