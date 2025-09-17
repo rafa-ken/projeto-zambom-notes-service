@@ -21,8 +21,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expor a porta do Flask
-EXPOSE 5000
-
+EXPOSE 5002
 
 # Rodar o Flask com Gunicorn
 CMD ["gunicorn", "-b", "0.0.0.0:5002", "app:app"]
