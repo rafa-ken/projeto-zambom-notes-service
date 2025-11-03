@@ -1,5 +1,6 @@
 # Web framework
 Flask==3.0.3
+flask_cors
 
 # Banco de dados (MongoDB)
 pymongo==4.10.1
