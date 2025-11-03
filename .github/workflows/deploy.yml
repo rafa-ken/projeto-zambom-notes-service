@@ -53,6 +53,9 @@ jobs:
           docker rm notes-service || true
           docker run -d -p 8082:5002 \
             -e MONGO_URI=${{ secrets.MONGO_URI }} \
+            -e AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }} \
+            -e API_AUDIENCE=${{ secrets.API_AUDIENCE }} \
+            -e FRONTEND_ORIGINS=${{ secrets.FRONTEND_ORIGINS }} \
             --name notes-service \
             ${{ secrets.DOCKERHUB_USERNAME }}/notes-service:latest
           EOF
