@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Web framework
 Flask==3.0.3
 flask_cors
@@ -25,3 +26,12 @@ requests==2.32.3
 
 dotenv
 >>>>>>> 533b7ad186c206ff44237c1ee5291bbc7c398f5c
+=======
+flask
+flask-pymongo
+python-dotenv
+pymongo
+mongomock
+pytest
+gunicorn
+>>>>>>> a90c9b38b9d8fcf03680a479afa9396e292257a1

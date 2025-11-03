@@ -1,5 +1,8 @@
 import pytest
 import mongomock
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import app, mongo
 
 @pytest.fixture
@@ -19,8 +22,7 @@ def client():
 def test_create_note(client):
     res = client.post(
         "/notes",
-        json={"title": "Minha Nota", "content": "Conteúdo da nota"},
-        headers={"Authorization": "fake-token"}
+        json={"title": "Minha Nota", "content": "Conteúdo da nota"}
     )
     assert res.status_code == 201
     assert res.json["title"] == "Minha Nota"
@@ -28,24 +30,21 @@ def test_create_note(client):
 def test_get_notes(client):
     client.post(
         "/notes",
-        json={"title": "Outra Nota", "content": "Mais conteúdo"},
-        headers={"Authorization": "fake-token"}
+        json={"title": "Outra Nota", "content": "Mais conteúdo"}
     )
-    res = client.get("/notes", headers={"Authorization": "fake-token"})
+    res = client.get("/notes")
     assert res.status_code == 200
     assert len(res.json) > 0
 
 def test_update_note(client):
     res = client.post(
         "/notes",
-        json={"title": "Antiga Nota", "content": "Velho conteúdo"},
-        headers={"Authorization": "fake-token"}
+        json={"title": "Antiga Nota", "content": "Velho conteúdo"}
     )
     note_id = res.json["id"]
     update_res = client.put(
         f"/notes/{note_id}",
-        json={"title": "Nota Atualizada"},
-        headers={"Authorization": "fake-token"}
+        json={"title": "Nota Atualizada"}
     )
     assert update_res.status_code == 200
     assert update_res.json["title"] == "Nota Atualizada"
@@ -53,45 +52,27 @@ def test_update_note(client):
 def test_delete_note(client):
     res = client.post(
         "/notes",
-        json={"title": "Nota Apagar", "content": "Deletar depois"},
-        headers={"Authorization": "fake-token"}
+        json={"title": "Nota Apagar", "content": "Deletar depois"}
     )
     note_id = res.json["id"]
-    delete_res = client.delete(f"/notes/{note_id}", headers={"Authorization": "fake-token"})
+    delete_res = client.delete(f"/notes/{note_id}")
     assert delete_res.status_code == 200
     assert delete_res.json["message"] == "Note deleted"
 
 
 # ----------------- TESTES DE ERRO ----------------- #
 def test_create_note_missing_fields(client):
-    res = client.post(
-        "/notes",
-        json={"title": "Só título"},
-        headers={"Authorization": "fake-token"}
-    )
+    res = client.post("/notes", json={"title": "Só título"})
     assert res.status_code == 400
     assert "error" in res.json
 
 def test_update_note_not_found(client):
     res = client.put(
         "/notes/000000000000000000000000",  # ObjectId inválido
-        json={"title": "Não existe"},
-        headers={"Authorization": "fake-token"}
+        json={"title": "Não existe"}
     )
     assert res.status_code in (400, 404)
 
 def test_delete_note_not_found(client):
-    res = client.delete(
-        "/notes/000000000000000000000000",
-        headers={"Authorization": "fake-token"}
-    )
+    res = client.delete("/notes/000000000000000000000000")
     assert res.status_code in (400, 404)
-
-def test_get_notes_without_token(client):
-    res = client.get("/notes")
-    assert res.status_code == 401
-    assert res.json["error"] == "Token missing"
-
-def test_create_note_without_token(client):
-    res = client.post("/notes", json={"title": "Sem token", "content": "Erro"})
-    assert res.status_code == 401

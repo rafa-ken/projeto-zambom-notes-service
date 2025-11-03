@@ -8,13 +8,18 @@ from bson.errors import InvalidId
 from pymongo import ReturnDocument
 from flask_cors import CORS
 from functools import wraps
+<<<<<<< HEAD
 from auth import requires_auth, register_auth_error_handlers
+=======
+from pymongo import ReturnDocument
+>>>>>>> a90c9b38b9d8fcf03680a479afa9396e292257a1
 
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app, origins=os.getenv("FRONTEND_ORIGINS", "*"))
 
+<<<<<<< HEAD
 app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/notesdb")
 mongo = PyMongo(app)
 
@@ -22,13 +27,22 @@ register_auth_error_handlers(app)
 
 @app.route("/notes", methods=["GET"])
 @requires_auth()
+=======
+app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/testdb")
+mongo = PyMongo(app)
+
+@app.route("/notes", methods=["GET"])
+>>>>>>> a90c9b38b9d8fcf03680a479afa9396e292257a1
 def get_notes():
     notes = mongo.db.notes.find()
     output = [{"id": str(note["_id"]), "title": note.get("title"), "content": note.get("content")} for note in notes]
     return jsonify(output), 200
 
 @app.route("/notes", methods=["POST"])
+<<<<<<< HEAD
 @requires_auth(required_scope="create:notes")
+=======
+>>>>>>> a90c9b38b9d8fcf03680a479afa9396e292257a1
 def create_note():
     data = request.json
     if not data or "title" not in data or "content" not in data:
@@ -39,8 +53,13 @@ def create_note():
 
     return jsonify({"id": str(note_id), "title": note["title"], "content": note["content"]}), 201
 
+from pymongo import ReturnDocument   # <--- IMPORTANTE
+
 @app.route("/notes/<id>", methods=["PUT"])
+<<<<<<< HEAD
 @requires_auth(required_scope="update:notes")
+=======
+>>>>>>> a90c9b38b9d8fcf03680a479afa9396e292257a1
 def update_note(id):
     try:
         _id = ObjectId(id)
@@ -49,6 +68,7 @@ def update_note(id):
 
     data = request.json or {}
     updated = mongo.db.notes.find_one_and_update(
+<<<<<<< HEAD
         {"_id": _id},
         {"$set": {"title": data.get("title"), "content": data.get("content")}},
         return_document=ReturnDocument.AFTER
@@ -59,6 +79,25 @@ def update_note(id):
 
 @app.route("/notes/<id>", methods=["DELETE"])
 @requires_auth(required_scope="delete:notes")
+=======
+        {"_id": ObjectId(id)},
+        {"$set": {
+            "title": data.get("title"),
+            "content": data.get("content")
+        }},
+        return_document=ReturnDocument.AFTER   # agora funciona
+    )
+    if not updated:
+        return jsonify({"error": "Note not found"}), 404
+    return jsonify({
+        "id": str(updated["_id"]),
+        "title": updated["title"],
+        "content": updated["content"]
+    }), 200   # <--- bom colocar o status code de sucesso
+
+
+@app.route("/notes/<id>", methods=["DELETE"])
+>>>>>>> a90c9b38b9d8fcf03680a479afa9396e292257a1
 def delete_note(id):
     try:
         _id = ObjectId(id)
