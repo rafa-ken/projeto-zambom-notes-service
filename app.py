@@ -13,7 +13,18 @@ from auth import requires_auth, register_auth_error_handlers
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, origins=os.getenv("FRONTEND_ORIGINS", "*"))
+
+# CORS configuration - allow frontend to send Authorization header
+cors_origins = os.getenv("FRONTEND_ORIGINS", "*")
+if cors_origins != "*":
+    cors_origins = [origin.strip() for origin in cors_origins.split(",")]
+
+CORS(app, 
+     resources={r"/*": {"origins": cors_origins}},
+     allow_headers=["Content-Type", "Authorization"],
+     expose_headers=["Content-Type"],
+     supports_credentials=True,
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
 # Config Mongo (um único lugar)
 app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/notesdb")
