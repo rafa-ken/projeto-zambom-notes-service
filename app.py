@@ -1,7 +1,7 @@
 # app.py (notes service - versão corrigida com CORS completo)
 import os
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify, g, make_response
+from flask import Flask, request, jsonify, make_response
 from flask_pymongo import PyMongo
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
@@ -17,50 +17,30 @@ load_dotenv()
 app = Flask(__name__)
 
 # ---------------------------------------------------------------------
-# Configuração do CORS
-# ---------------------------------------------------------------------
-cors_origins = os.getenv("FRONTEND_ORIGINS", "*")
-if cors_origins != "*":
-    cors_origins = [origin.strip() for origin in cors_origins.split(",")]
-
-CORS(
-    app,
-    resources={r"/*": {
-        "origins": cors_origins,
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
-        "expose_headers": ["Content-Type"],
-        "supports_credentials": True,
-        "max_age": 3600
-    }}
-)
-
-# ---------------------------------------------------------------------
-# Responde preflight OPTIONS antes de qualquer autenticação
-# ---------------------------------------------------------------------
-@app.before_request
-def handle_preflight():
-    if request.method == "OPTIONS":
-        origin = request.headers.get("Origin")
-        allowed_origin = None
-        if cors_origins == "*" or origin in cors_origins:
-            allowed_origin = origin if origin else "*"
-
-        resp = make_response("", 204)
-        if allowed_origin:
-            resp.headers["Access-Control-Allow-Origin"] = allowed_origin
-            resp.headers["Vary"] = "Origin"
-            resp.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
-            resp.headers["Access-Control-Allow-Headers"] = "Authorization,Content-Type,Accept"
-            resp.headers["Access-Control-Allow-Credentials"] = "true"
-            resp.headers["Access-Control-Max-Age"] = "3600"
-        return resp
-
-# ---------------------------------------------------------------------
-# Configuração MongoDB
+# Configuração do MongoDB
 # ---------------------------------------------------------------------
 app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/notesdb")
 mongo = PyMongo(app)
+
+# ---------------------------------------------------------------------
+# Configuração de origens CORS (padrão: http://localhost:5173)
+# - CORS_ORIGINS pode ser "*" ou uma lista separada por vírgula.
+# ---------------------------------------------------------------------
+_raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").strip()
+if _raw_origins == "*" or _raw_origins.lower() == "any":
+    cors_origins = "*"   # allow any origin (não combine com credentials=True)
+else:
+    # converte em lista e remove espaços
+    cors_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
+# Use flask-cors para respostas "normais"
+CORS(
+    app,
+    resources={r"/*": {"origins": cors_origins}},
+    supports_credentials=True,
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "Accept"],
+)
 
 # ---------------------------------------------------------------------
 # Registro de handlers de erro do Auth0
@@ -68,20 +48,34 @@ mongo = PyMongo(app)
 register_auth_error_handlers(app)
 
 # ---------------------------------------------------------------------
-# Garante headers CORS em todas as respostas
+# Responde preflight OPTIONS antes de qualquer autenticação (protege contra
+# decorators que exigem auth que poderiam bloquear o preflight)
 # ---------------------------------------------------------------------
-@app.after_request
-def after_request(response):
+@app.before_request
+def handle_preflight():
+    if request.method != "OPTIONS":
+        return None
+
     origin = request.headers.get("Origin")
-    if origin:
-        if cors_origins == "*" or origin in cors_origins:
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Vary"] = "Origin"
-            response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization,Accept"
-            response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Max-Age"] = "3600"
-    return response
+    allowed_origin = None
+
+    if cors_origins == "*":
+        allowed_origin = "*" if origin else "*"
+    else:
+        # cors_origins é lista de origens
+        if origin and origin in cors_origins:
+            allowed_origin = origin
+
+    resp = make_response("", 204)
+    if allowed_origin:
+        resp.headers["Access-Control-Allow-Origin"] = allowed_origin
+        resp.headers["Vary"] = "Origin"
+        resp.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
+        resp.headers["Access-Control-Allow-Headers"] = "Authorization,Content-Type,Accept"
+        # Only include credentials header if you actually support credentials
+        resp.headers["Access-Control-Allow-Credentials"] = "true"
+        resp.headers["Access-Control-Max-Age"] = "3600"
+    return resp
 
 # ---------------------------------------------------------------------
 # Rotas da API
