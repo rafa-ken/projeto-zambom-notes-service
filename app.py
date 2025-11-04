@@ -20,11 +20,14 @@ if cors_origins != "*":
     cors_origins = [origin.strip() for origin in cors_origins.split(",")]
 
 CORS(app, 
-     resources={r"/*": {"origins": cors_origins}},
-     allow_headers=["Content-Type", "Authorization"],
-     expose_headers=["Content-Type"],
-     supports_credentials=True,
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+     resources={r"/*": {
+         "origins": cors_origins,
+         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         "allow_headers": ["Content-Type", "Authorization"],
+         "expose_headers": ["Content-Type"],
+         "supports_credentials": True,
+         "max_age": 3600
+     }})
 
 # Config Mongo (um único lugar)
 app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/notesdb")
@@ -32,6 +35,19 @@ mongo = PyMongo(app)
 
 # registra handler de erros do auth (AuthError)
 register_auth_error_handlers(app)
+
+# Add explicit CORS headers to all responses
+@app.after_request
+def after_request(response):
+    origin = request.headers.get('Origin')
+    if origin:
+        if cors_origins == "*" or origin in cors_origins:
+            response.headers.add('Access-Control-Allow-Origin', origin)
+            response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+            response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            response.headers.add('Access-Control-Max-Age', '3600')
+    return response
 
 @app.route("/notes", methods=["GET"])
 @requires_auth()
