@@ -242,7 +242,7 @@ def get_notes_for_task(task_id):
 
 
 @app.route("/notes", methods=["POST"])
-@requires_auth(required_scope="create:notes")
+@requires_auth()  # Remove verificação de scope
 def create_note():
     data = request.json or {}
     # aceita pt/br e en
@@ -286,7 +286,7 @@ def create_note():
         return jsonify({"error": "Task service unavailable. Tente novamente mais tarde."}), 503
 
 @app.route("/notes/<id>", methods=["PUT"])
-@requires_auth(required_scope="update:notes")
+@requires_auth()  # Remove verificação de scope
 def update_note(id):
     try:
         _id = ObjectId(id)
@@ -305,7 +305,7 @@ def update_note(id):
     return jsonify({"id": str(updated["_id"]), "title": updated.get("title"), "content": updated.get("content")}), 200
 
 @app.route("/notes/<id>", methods=["DELETE"])
-@requires_auth(required_scope="delete:notes")
+@requires_auth()  # Remove verificação de scope
 def delete_note(id):
     try:
         _id = ObjectId(id)
